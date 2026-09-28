@@ -1,0 +1,8 @@
+VariantID,VariantName,RiskLevel,FirstDetected
+VAR01,Wildtype (Original),Baseline,2019-12-01
+VAR02,Alpha (B.1.1.7),VOC,2020-09-01
+VAR03,Beta (B.1.351),VOC,2020-10-01
+VAR04,Gamma (P.1),VOC,2020-11-01
+VAR05,Delta (B.1.617.2),High VOC,2020-10-01
+VAR06,Omicron (BA.1/BA.5),High VOC,2021-11-01
+VAR07,Omicron Subvariants (XBB/JN.1),VOI,2022-10-01

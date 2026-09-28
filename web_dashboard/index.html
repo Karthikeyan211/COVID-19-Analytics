@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>COVID-19 Global Analytics & Power BI Data Studio</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Leaflet CSS for Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- App Header -->
+  <header class="app-header">
+    <div class="brand-container">
+      <div class="brand-icon">
+        <i class="fa-solid fa-virus-covid"></i>
+      </div>
+      <div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="brand-title">COVID-19 Analytics Studio</span>
+          <span class="brand-badge">Python ETL + Power BI</span>
+        </div>
+        <p style="font-size: 0.72rem; color: var(--text-dim);">Global Epidemiological & Immunization Intelligence Hub</p>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <!-- Global Country Filter -->
+      <select id="countrySelect" class="select-control">
+        <option value="ALL">🌐 All Countries (Global Total)</option>
+        <!-- Populated dynamically via JS -->
+      </select>
+
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--accent-emerald);">
+        <i class="fa-solid fa-circle-dot fa-beat" style="--fa-animation-duration: 1.5s;"></i>
+        <span>Live Data Engine</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <div class="app-container">
+
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="nav-item active" data-tab="tabOverview">
+        <i class="fa-solid fa-chart-line"></i>
+        <span>Executive Dashboard</span>
+      </div>
+      <div class="nav-item" data-tab="tabMap">
+        <i class="fa-solid fa-earth-americas"></i>
+        <span>Geographic Heatmap</span>
+      </div>
+      <div class="nav-item" data-tab="tabVaccine">
+        <i class="fa-solid fa-syringe"></i>
+        <span>Vaccine & Variants</span>
+      </div>
+      <div class="nav-item" data-tab="tabPowerBI">
+        <i class="fa-solid fa-cube"></i>
+        <span>Power BI DAX Studio</span>
+      </div>
+      <div class="nav-item" data-tab="tabETL">
+        <i class="fa-solid fa-terminal"></i>
+        <span>Python ETL Pipeline</span>
+      </div>
+
+      <div style="margin-top: auto; padding: 12px; background: rgba(255, 255, 255, 0.03); border-radius: 12px; border: 1px solid var(--border-glass);">
+        <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-bottom: 4px;">Dataset Schema</p>
+        <p style="font-size: 0.7rem; color: var(--text-dim);">Star Schema • 5 Tables</p>
+        <p style="font-size: 0.7rem; color: var(--text-dim); margin-top: 4px;">4 Dynamic DAX Measure Tables</p>
+      </div>
+    </aside>
+
+    <!-- Content Workspace -->
+    <main class="main-content">
+
+      <!-- ================= TAB 1: EXECUTIVE OVERVIEW ================= -->
+      <section id="tabOverview" class="tab-pane active">
+
+        <!-- Controls Bar -->
+        <div class="controls-bar">
+          <div class="filter-group">
+            <span class="filter-label">Time Horizon:</span>
+            <button class="btn-preset active" data-range="ALL">Full Timeline (2020-2023)</button>
+            <button class="btn-preset" data-range="2020">2020 Initial Wave</button>
+            <button class="btn-preset" data-range="2021">2021 Delta Surge</button>
+            <button class="btn-preset" data-range="2022">2022 Omicron Wave</button>
+          </div>
+          <div class="filter-group">
+            <span class="filter-label">Primary Metric:</span>
+            <button class="btn-preset active" data-metric="cases">New Cases</button>
+            <button class="btn-preset" data-metric="deaths">Deaths</button>
+            <button class="btn-preset" data-metric="vax">Vaccinations</button>
+          </div>
+        </div>
+
+        <!-- KPI Cards Grid -->
+        <div class="kpi-grid">
+          <div class="kpi-card" style="--card-accent: var(--primary-cyan);">
+            <div class="kpi-header">
+              <span class="kpi-title">Total Cases</span>
+              <div class="kpi-icon"><i class="fa-solid fa-virus"></i></div>
+            </div>
+            <div id="kpiTotalCases" class="kpi-value">0</div>
+            <div class="kpi-subtext">
+              <span id="kpiMovingAvgCasesBadge" class="badge-trend up">+0% 7-Day MA</span>
+              <span>vs prior 7-day average</span>
+            </div>
+          </div>
+
+          <div class="kpi-card" style="--card-accent: var(--accent-coral);">
+            <div class="kpi-header">
+              <span class="kpi-title">Total Deaths</span>
+              <div class="kpi-icon"><i class="fa-solid fa-skull-crossbones"></i></div>
+            </div>
+            <div id="kpiTotalDeaths" class="kpi-value">0</div>
+            <div class="kpi-subtext">
+              <span id="kpiFatalityRateBadge" class="badge-trend down">0.0% CFR</span>
+              <span>Case Fatality Rate</span>
+            </div>
+          </div>
+
+          <div class="kpi-card" style="--card-accent: var(--accent-emerald);">
+            <div class="kpi-header">
+              <span class="kpi-title">Fully Vaccinated</span>
+              <div class="kpi-icon"><i class="fa-solid fa-shield-halved"></i></div>
+            </div>
+            <div id="kpiTotalVax" class="kpi-value">0</div>
+            <div class="kpi-subtext">
+              <span id="kpiVaxCoverageBadge" class="badge-trend down">0%</span>
+              <span>Global Population Coverage</span>
+            </div>
+          </div>
+
+          <div class="kpi-card" style="--card-accent: var(--accent-amber);">
+            <div class="kpi-header">
+              <span class="kpi-title">Surge Risk Index</span>
+              <div class="kpi-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            </div>
+            <div id="kpiSurgeIndex" class="kpi-value" style="font-size: 1.35rem; color: var(--accent-amber);">Moderate</div>
+            <div class="kpi-subtext">
+              <span>Epidemiological Threat Classification</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="charts-grid">
+          <!-- Main Epidemiology Timeseries Chart -->
+          <div class="chart-card col-8">
+            <div class="chart-title-bar">
+              <h3 class="chart-title"><i class="fa-solid fa-chart-area" style="color: var(--primary-cyan);"></i> Daily Infections & 7-Day Moving Average</h3>
+              <span style="font-size: 0.78rem; color: var(--text-dim);">Dual Axis Comparison</span>
+            </div>
+            <div class="chart-container">
+              <canvas id="chartMainTimeseries"></canvas>
+            </div>
+          </div>
+
+          <!-- Regional Case Distribution -->
+          <div class="chart-card col-4">
+            <div class="chart-title-bar">
+              <h3 class="chart-title"><i class="fa-solid fa-chart-pie" style="color: var(--accent-purple);"></i> Country Severity Breakdown</h3>
+            </div>
+            <div class="chart-container">
+              <canvas id="chartCountryPie"></canvas>
+            </div>
+          </div>
+
+          <!-- Positivity & ICU Trajectory -->
+          <div class="chart-card col-6">
+            <div class="chart-title-bar">
+              <h3 class="chart-title"><i class="fa-solid fa-hospital-user" style="color: var(--accent-coral);"></i> Positivity Rate (%) & ICU Occupancy</h3>
+            </div>
+            <div class="chart-container">
+              <canvas id="chartPositivityICU"></canvas>
+            </div>
+          </div>
+
+          <!-- Monthly Trend Matrix -->
+          <div class="chart-card col-6">
+            <div class="chart-title-bar">
+              <h3 class="chart-title"><i class="fa-solid fa-wave-square" style="color: var(--accent-emerald);"></i> Monthly Infection Waves Timeline</h3>
+            </div>
+            <div class="chart-container">
+              <canvas id="chartMonthlyWaves"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 2: GEOGRAPHIC HEATMAP ================= -->
+      <section id="tabMap" class="tab-pane">
+        <div class="controls-bar" style="margin-bottom: 1rem;">
+          <div class="filter-group">
+            <span class="filter-label">Map Overlay Layer:</span>
+            <button class="btn-preset active" data-maplayer="cases">Total Cases Bubble</button>
+            <button class="btn-preset" data-maplayer="cfr">Fatality Rate %</button>
+            <button class="btn-preset" data-maplayer="vax">Vaccination Coverage %</button>
+          </div>
+          <p style="font-size: 0.8rem; color: var(--text-dim);">Click on country markers for localized epidemiological statistics.</p>
+        </div>
+
+        <div class="chart-card col-12">
+          <div id="mapContainer"></div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 3: VACCINE & VARIANTS ================= -->
+      <section id="tabVaccine" class="tab-pane">
+        <div class="charts-grid">
+          <div class="chart-card col-8">
+            <div class="chart-title-bar">
+              <h3 class="chart-title"><i class="fa-solid fa-syringe" style="color: var(--accent-emerald);"></i> Vaccination Rollout Progress by Country</h3>
+            </div>
+            <div class="chart-container">
+              <canvas id="chartVaccineProgress"></canvas>
+            </div>
+          </div>
+
+          <div class="chart-card col-4">
+            <div class="chart-title-bar">
+              <h3 class="chart-title"><i class="fa-solid fa-dna" style="color: var(--accent-amber);"></i> Variant Dominance Mix</h3>
+            </div>
+            <div class="chart-container">
+              <canvas id="chartVariants"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 4: POWER BI DAX STUDIO ================= -->
+      <section id="tabPowerBI" class="tab-pane">
+        <div style="margin-bottom: 1.5rem;">
+          <h2 style="font-family: 'Outfit'; font-size: 1.4rem; color: var(--text-main); margin-bottom: 6px;">
+            <i class="fa-solid fa-cube" style="color: var(--primary-cyan);"></i> Power BI Data Model & DAX Measure Explorer
+          </h2>
+          <p style="font-size: 0.88rem; color: var(--text-muted);">
+            Explore the production Star Schema structure and inspect/copy DAX measures optimized for Power BI Desktop.
+          </p>
+        </div>
+
+        <!-- Star Schema Schema Visualizer -->
+        <div style="margin-bottom: 2rem;">
+          <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 12px;">Star Schema Data Architecture</h3>
+          <div class="schema-grid">
+            
+            <div class="table-node">
+              <div class="table-node-header">
+                <span>Dim_Country</span>
+                <span style="font-size: 0.7rem; background: rgba(0,242,254,0.2); color: var(--primary-cyan); padding: 2px 6px; border-radius: 4px;">Dimension</span>
+              </div>
+              <div class="table-node-body">
+                <div class="field-item"><span>CountryCode</span><span class="pk">PK</span></div>
+                <div class="field-item"><span>CountryName</span><span>String</span></div>
+                <div class="field-item"><span>Region</span><span>String</span></div>
+                <div class="field-item"><span>Continent</span><span>String</span></div>
+                <div class="field-item"><span>Population</span><span>BigInt</span></div>
+                <div class="field-item"><span>HospitalBeds_per_1k</span><span>Float</span></div>
+              </div>
+            </div>
+
+            <div class="table-node">
+              <div class="table-node-header">
+                <span>Fact_COVID_Daily</span>
+                <span style="font-size: 0.7rem; background: rgba(255,82,82,0.2); color: var(--accent-coral); padding: 2px 6px; border-radius: 4px;">Fact Table</span>
+              </div>
+              <div class="table-node-body">
+                <div class="field-item"><span>DateKey</span><span class="fk">FK</span></div>
+                <div class="field-item"><span>CountryCode</span><span class="fk">FK</span></div>
+                <div class="field-item"><span>NewCases</span><span>Int</span></div>
+                <div class="field-item"><span>CumulativeCases</span><span>Int</span></div>
+                <div class="field-item"><span>NewDeaths</span><span>Int</span></div>
+                <div class="field-item"><span>PositivityRate</span><span>Float</span></div>
+                <div class="field-item"><span>MovingAvg7DayCases</span><span>Float</span></div>
+              </div>
+            </div>
+
+            <div class="table-node">
+              <div class="table-node-header">
+                <span>Fact_Vaccinations</span>
+                <span style="font-size: 0.7rem; background: rgba(0,230,118,0.2); color: var(--accent-emerald); padding: 2px 6px; border-radius: 4px;">Fact Table</span>
+              </div>
+              <div class="table-node-body">
+                <div class="field-item"><span>DateKey</span><span class="fk">FK</span></div>
+                <div class="field-item"><span>CountryCode</span><span class="fk">FK</span></div>
+                <div class="field-item"><span>DailyDoses</span><span>Int</span></div>
+                <div class="field-item"><span>FullyVaccinated</span><span>Int</span></div>
+                <div class="field-item"><span>BoosterDoses</span><span>Int</span></div>
+                <div class="field-item"><span>PctVaccinated</span><span>Float</span></div>
+              </div>
+            </div>
+
+            <div class="table-node">
+              <div class="table-node-header">
+                <span>Dim_Date</span>
+                <span style="font-size: 0.7rem; background: rgba(0,242,254,0.2); color: var(--primary-cyan); padding: 2px 6px; border-radius: 4px;">Dimension</span>
+              </div>
+              <div class="table-node-body">
+                <div class="field-item"><span>DateKey</span><span class="pk">PK</span></div>
+                <div class="field-item"><span>Date</span><span>Date</span></div>
+                <div class="field-item"><span>Year / Quarter / Month</span><span>Int/String</span></div>
+                <div class="field-item"><span>WeekOfYear</span><span>Int</span></div>
+                <div class="field-item"><span>DayOfWeek</span><span>String</span></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- DAX Measure Library Interactive Explorer -->
+        <div class="chart-card col-12">
+          <div class="chart-title-bar">
+            <h3 class="chart-title"><i class="fa-solid fa-code" style="color: var(--primary-cyan);"></i> Production DAX Measure Library</h3>
+            <select id="daxCategorySelect" class="select-control" style="font-size: 0.82rem; padding: 4px 12px;">
+              <option value="ALL">All Categories (30+ DAX Formulas)</option>
+              <option value="CORE">Core Epidemiological Measures</option>
+              <option value="RATIOS">Rates, Ratios & Per Capita</option>
+              <option value="TIME">Time Intelligence (7-Day MA, WoW)</option>
+              <option value="SURGE">Surge Risk Indicators</option>
+            </select>
+          </div>
+          <div id="daxMeasuresContainer">
+            <!-- Dynamically populated via powerbi_explorer.js -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 5: PYTHON ETL PIPELINE ================= -->
+      <section id="tabETL" class="tab-pane">
+        <div style="margin-bottom: 1.5rem;">
+          <h2 style="font-family: 'Outfit'; font-size: 1.4rem; color: var(--text-main); margin-bottom: 6px;">
+            <i class="fa-solid fa-terminal" style="color: var(--accent-emerald);"></i> Python ETL Data Pipeline Studio
+          </h2>
+          <p style="font-size: 0.88rem; color: var(--text-muted);">
+            Extract, Transform & Load workflow status, dataset export details, and one-click CSV downloads for Power BI.
+          </p>
+        </div>
+
+        <div class="charts-grid">
+          <div class="chart-card col-6">
+            <div class="chart-title-bar">
+              <h3 class="chart-title"><i class="fa-solid fa-file-csv" style="color: var(--accent-emerald);"></i> Exported Datasets for Power BI</h3>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                <div>
+                  <strong style="font-size: 0.9rem; color: var(--primary-cyan);">dim_country.csv</strong>
+                  <p style="font-size: 0.75rem; color: var(--text-dim);">12 Countries • Metadata, Population, Beds, Lat/Long</p>
+                </div>
+                <a href="../data/processed/dim_country.csv" download class="btn-preset active" style="text-decoration: none;"><i class="fa-solid fa-download"></i> Download</a>
+              </div>
+
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                <div>
+                  <strong style="font-size: 0.9rem; color: var(--accent-coral);">fact_covid_daily.csv</strong>
+                  <p style="font-size: 0.75rem; color: var(--text-dim);">17,500+ Rows • Daily Cases, Deaths, ICU, Moving Averages</p>
+                </div>
+                <a href="../data/processed/fact_covid_daily.csv" download class="btn-preset active" style="text-decoration: none;"><i class="fa-solid fa-download"></i> Download</a>
+              </div>
+
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                <div>
+                  <strong style="font-size: 0.9rem; color: var(--accent-emerald);">fact_vaccinations.csv</strong>
+                  <p style="font-size: 0.75rem; color: var(--text-dim);">17,500+ Rows • Daily Doses, Fully Vaccinated, Boosters</p>
+                </div>
+                <a href="../data/processed/fact_vaccinations.csv" download class="btn-preset active" style="text-decoration: none;"><i class="fa-solid fa-download"></i> Download</a>
+              </div>
+
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                <div>
+                  <strong style="font-size: 0.9rem; color: var(--accent-amber);">dim_date.csv</strong>
+                  <p style="font-size: 0.75rem; color: var(--text-dim);">1,461 Days • DateKey, Year, Quarter, Week, DayOfWeek</p>
+                </div>
+                <a href="../data/processed/dim_date.csv" download class="btn-preset active" style="text-decoration: none;"><i class="fa-solid fa-download"></i> Download</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="chart-card col-6">
+            <div class="chart-title-bar">
+              <h3 class="chart-title"><i class="fa-solid fa-scroll" style="color: var(--accent-purple);"></i> Pipeline Execution Log Output</h3>
+            </div>
+            <div class="dax-code-box" style="height: 280px; color: var(--accent-emerald);">
+[1/5] Initializing COVID-19 ETL Data Pipeline...
+[2/5] Generating Dimension Tables (Dim_Country, Dim_Date, Dim_Variant)...
+[3/5] Generating Fact Tables with Epidemic Wave Functions (2020-2023)...
+[4/5] Calculating 7-Day Moving Averages & Positivity Metrics...
+[5/5] Packaging Consolidated JSON payload for Web App...
+[SUCCESS] ETL Pipeline successfully executed cleanly.
+Processed 17,532 fact records across 12 countries.
+All outputs synced with Power BI Star Schema specifications.
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- App Footer -->
+  <footer class="app-footer">
+    <div>
+      <strong>COVID-19 Analytics Dashboard</strong> • Powered by Python ETL, Power BI Star Schema, and Custom Vanilla JS/Chart.js
+    </div>
+    <div>
+      <span id="footerRecordCount">17,532 Fact Records Processed</span>
+    </div>
+  </footer>
+
+  <!-- External Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Modular Application Scripts -->
+  <script src="js/charts.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/powerbi_explorer.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>

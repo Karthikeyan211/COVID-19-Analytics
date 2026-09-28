@@ -1,0 +1,180 @@
+// ===============================================================================
+// POWER BI DAX MEASURES LIBRARY - COVID-19 ANALYTICS DASHBOARD
+// Data Model Architecture: Star Schema (Fact_COVID_Daily, Fact_Vaccinations, Dim_Country, Dim_Date, Dim_Variant)
+// ===============================================================================
+
+// -------------------------------------------------------------------------------
+// 1. CORE EPIDEMIOLOGICAL METRICS
+// -------------------------------------------------------------------------------
+
+Total Cases = 
+SUM(Fact_COVID_Daily[NewCases])
+
+Cumulative Cases Max = 
+MAX(Fact_COVID_Daily[CumulativeCases])
+
+Total Deaths = 
+SUM(Fact_COVID_Daily[NewDeaths])
+
+Cumulative Deaths Max = 
+MAX(Fact_COVID_Daily[CumulativeDeaths])
+
+Active Cases = 
+SUM(Fact_COVID_Daily[ActiveCases])
+
+Hospitalized Patients = 
+SUM(Fact_COVID_Daily[Hospitalized])
+
+ICU Patients = 
+SUM(Fact_COVID_Daily[ICUPatients])
+
+
+// -------------------------------------------------------------------------------
+// 2. RATES, RATIOS & PER CAPITA METRICS
+// -------------------------------------------------------------------------------
+
+Case Fatality Rate % = 
+DIVIDE(
+    [Total Deaths],
+    [Total Cases],
+    0
+) * 100
+
+Positivity Rate Avg % = 
+AVERAGE(Fact_COVID_Daily[PositivityRate])
+
+Cases Per 100k Population = 
+DIVIDE(
+    [Total Cases],
+    SUM(Dim_Country[Population]),
+    0
+) * 100000
+
+Deaths Per 100k Population = 
+DIVIDE(
+    [Total Deaths],
+    SUM(Dim_Country[Population]),
+    0
+) * 100000
+
+ICU Occupancy Rate % = 
+DIVIDE(
+    [ICU Patients],
+    [Hospitalized Patients],
+    0
+) * 100
+
+
+// -------------------------------------------------------------------------------
+// 3. VACCINATION & IMMUNITY METRICS
+// -------------------------------------------------------------------------------
+
+Total Doses Administered = 
+SUM(Fact_Vaccinations[DailyDoses])
+
+Total Fully Vaccinated = 
+MAX(Fact_Vaccinations[FullyVaccinated])
+
+Total Booster Doses = 
+MAX(Fact_Vaccinations[BoosterDoses])
+
+Vaccination Coverage % = 
+DIVIDE(
+    [Total Fully Vaccinated],
+    SUM(Dim_Country[Population]),
+    0
+) * 100
+
+Herd Immunity Gap % = 
+MAX(0, 85.0 - [Vaccination Coverage %])
+
+
+// -------------------------------------------------------------------------------
+// 4. TIME INTELLIGENCE & MOVING AVERAGES (7-DAY & 14-DAY)
+// -------------------------------------------------------------------------------
+
+7-Day Moving Avg Cases = 
+AVERAGEX(
+    DATESINPERIOD(
+        Dim_Date[Date],
+        LASTDATE(Dim_Date[Date]),
+        -7,
+        DAY
+    ),
+    [Total Cases]
+)
+
+7-Day Moving Avg Deaths = 
+AVERAGEX(
+    DATESINPERIOD(
+        Dim_Date[Date],
+        LASTDATE(Dim_Date[Date]),
+        -7,
+        DAY
+    ),
+    [Total Deaths]
+)
+
+14-Day Moving Avg Cases = 
+AVERAGEX(
+    DATESINPERIOD(
+        Dim_Date[Date],
+        LASTDATE(Dim_Date[Date]),
+        -14,
+        DAY
+    ),
+    [Total Cases]
+)
+
+Prior Week Cases = 
+CALCULATE(
+    [Total Cases],
+    DATEADD(Dim_Date[Date], -7, DAY)
+)
+
+WoW Case Growth % = 
+VAR CurrentWeek = [Total Cases]
+VAR PreviousWeek = [Prior Week Cases]
+RETURN
+DIVIDE(CurrentWeek - PreviousWeek, PreviousWeek, 0) * 100
+
+MoM Case Growth % = 
+VAR CurrentMonth = [Total Cases]
+VAR PreviousMonth = CALCULATE([Total Cases], DATEADD(Dim_Date[Date], -1, MONTH))
+RETURN
+DIVIDE(CurrentMonth - PreviousMonth, PreviousMonth, 0) * 100
+
+YTD Total Cases = 
+TOTALYTD([Total Cases], Dim_Date[Date])
+
+
+// -------------------------------------------------------------------------------
+// 5. DYNAMIC SURGE INDICATORS & ALERT DAX METRICS
+// -------------------------------------------------------------------------------
+
+Surge Risk Index = 
+VAR Growth = [WoW Case Growth %]
+VAR Positivity = [Positivity Rate Avg %]
+RETURN
+SWITCH(
+    TRUE(),
+    Growth > 50 || Positivity > 15, "Critical Surge (Red)",
+    Growth > 20 || Positivity > 8, "Moderate Surge (Orange)",
+    Growth > 0 || Positivity > 3, "Watch Status (Yellow)",
+    "Controlled / Stable (Green)"
+)
+
+Status Color Hex = 
+SWITCH(
+    [Surge Risk Index],
+    "Critical Surge (Red)", "#FF5252",
+    "Moderate Surge (Orange)", "#FFAB00",
+    "Watch Status (Yellow)", "#FFD600",
+    "#00E676"
+)
+
+Peak Daily Cases In Range = 
+MAXX(
+    VALUES(Dim_Date[Date]),
+    [Total Cases]
+)

@@ -1,0 +1,13 @@
+CountryCode,CountryName,Region,Continent,Population,MedianAge,GDP_per_capita,HospitalBeds_per_1k,Lat,Long
+USA,United States,North America,North America,331893745,38.5,65297,2.9,37.0902,-95.7129
+IND,India,South Asia,Asia,1408044253,28.7,2100,0.5,20.5937,78.9629
+BRA,Brazil,Latin America,South America,214326223,33.5,8920,2.2,-14.235,-51.9253
+GBR,United Kingdom,Western Europe,Europe,67326569,40.5,42330,2.5,55.3781,-3.436
+FRA,France,Western Europe,Europe,67749632,42.0,43510,5.9,46.2276,2.2137
+DEU,Germany,Western Europe,Europe,83190556,47.8,48200,8.0,51.1657,10.4515
+JPN,Japan,East Asia,Asia,125681593,48.6,39300,13.0,36.2048,138.2529
+ZAF,South Africa,Southern Africa,Africa,59308690,27.6,6000,2.3,-30.5595,22.9375
+AUS,Australia,Oceania,Oceania,25687041,37.5,51800,3.8,-25.2744,133.7751
+CAN,Canada,North America,North America,38246108,41.1,46200,2.5,56.1304,-106.3468
+ITA,Italy,Southern Europe,Europe,59037474,47.3,35200,3.2,41.8719,12.5674
+ESP,Spain,Southern Europe,Europe,47415750,44.9,30100,3.0,40.4637,-3.7492
